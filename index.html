@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Teka-Teki Lucu</title>
+
+    <style>
+        :root {
+            --primary-color: #ff6b6b;
+            --secondary-color: #4ecdc4;
+            --bg-color: #f7f9fb;
+            --dark-color: #222;
+            --light-color: #ffffff;
+            --correct-color: #2ecc71;
+            --wrong-color: #e74c3c;
+            --hint-color: #3498db;
+        }
+
+        /* Reset Dasar */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--dark-color);
+            padding: 20px;
+        }
+
+        /* Kontainer Utama Game */
+        .game-container {
+            background: var(--light-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+            text-align: center;
+            padding: 2.5rem;
+        }
+
+        h1 {
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+        }
+
+        /* Layar Game */
+        #riddle-text {
+            font-size: 1.5rem;
+            font-weight: 500;
+            line-height: 1.6;
+            min-height: 100px; /* Mencegah layout 'melompat' */
+            margin-top: 1.5rem;
+            margin-bottom: 2rem;
+            color: var(--dark-color);
+        }
+
+        /* Input & Tombol */
+        #answer-input {
+            width: 100%;
+            font-size: 1.1rem;
+            padding: 0.75rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        #answer-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            flex-grow: 1;
+            font-size: 1.1rem;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            color: var(--light-color);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #check-btn {
+            background-color: var(--primary-color);
+        }
+        #check-btn:hover {
+            background-color: #ff4747;
+        }
+
+        #hint-btn {
+            background-color: var(--secondary-color);
+        }
+        #hint-btn:hover {
+            background-color: #3ab8ae;
+        }
+        
+        #next-btn, #play-again-btn {
+            width: 100%;
+            background-color: var(--correct-color);
+        }
+        #next-btn:hover, #play-again-btn:hover {
+            background-color: #27ae60;
+        }
+
+        /* Teks Umpan Balik (Feedback) */
+        #feedback-text {
+            min-height: 2em;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        
+        .feedback.correct {
+            color: var(--correct-color);
+        }
+        .feedback.wrong {
+            color: var(--wrong-color);
+        }
+        .feedback.hint {
+            color: var(--hint-color);
+        }
+
+        /* Utilitas */
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="game-container">
+        
+        <div id="start-screen">
+            <h1>Game Teka-Teki Lucu 🤣</h1>
+            <p>Siap-siap ketawa (atau kesel)!</p>
+            <button id="start-btn" class="btn" style="background-color: var(--primary-color); width: 100%; margin-top: 2rem;">
+                Mulai Main!
+            </button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <h1 id="riddle-counter">Teka-Teki 1</h1>
+            <p id="riddle-text">Ini adalah pertanyaan teka-teki...</p>
+            
+            <input type="text" id="answer-input" placeholder="Ketik jawabanmu di sini...">
+            
+            <div class="button-group">
+                <button id="check-btn" class="btn">Jawab</button>
+                <button id="hint-btn" class="btn">Petunjuk</button>
+            </div>
+            
+            <p id="feedback-text" class="feedback"></p>
+            
+            <button id="next-btn" class="btn hidden">Lanjut ke Teka-Teki Berikutnya!</button>
+        </div>
+
+        <div id="end-screen" class="hidden">
+            <h1>Selesai!</h1>
+            <p>Hebat! Kamu berhasil menjawab semua teka-teki!</p>
+            <button id="play-again-btn" class="btn" style="margin-top: 2rem;">
+                Main Lagi
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // === 1. "API" Data Teka-Teki ===
+            // Anda bisa tambahkan ratusan teka-teki di sini
+            const tekaTekiData = [
+                {
+                    question: "Aku punya leher tanpa kepala, dan punya punggung tanpa badan. Siapakah aku?",
+                    answer: "Botol",
+                    hint: "Aku sering diisi air minum."
+                },
+                {
+                    question: "Kenapa air laut asin?",
+                    answer: "Karena ikannya keringetan",
+                    hint: "Makhluk hidup di dalamnya lelah berenang."
+                },
+                {
+                    question: "Hewan apa yang paling kaya?",
+                    answer: "Beruang",
+                    hint: "Ada 'uang' di namanya."
+                },
+                {
+                    question: "Pintu apa yang didorong 10 orang nggak bakal kebuka?",
+                    answer: "Pintu yang ada tulisan TARIK",
+                    hint: "Lawan kata dari DORONG."
+                },
+                {
+                    question: "Kalau kita ke pasar, kita pasti ketemu...?",
+                    answer: "Pasar",
+                    hint: "Jawabannya ada di pertanyaan itu sendiri."
+                },
+                {
+                    question: "Gajah apa yang paling baik hati?",
+                    answer: "Gajahat", // Ga jahat :)
+                    hint: "Kebalikan dari sifat jahat."
+                }
+            ];
+
+            // === 2. Seleksi Elemen DOM ===
+            const startScreen = document.getElementById('start-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const endScreen = document.getElementById('end-screen');
+            
+            const startBtn = document.getElementById('start-btn');
+            const playAgainBtn = document.getElementById('play-again-btn');
+            
+            const riddleCounter = document.getElementById('riddle-counter');
+            const riddleText = document.getElementById('riddle-text');
+            const answerInput = document.getElementById('answer-input');
+            const checkBtn = document.getElementById('check-btn');
+            const hintBtn = document.getElementById('hint-btn');
+            const feedbackText = document.getElementById('feedback-text');
+            const nextBtn = document.getElementById('next-btn');
+
+            // === 3. Variabel Status Game ===
+            let currentRiddleIndex = 0;
+            let shuffledTekaTeki = [];
+
+            /**
+             * Mengacak urutan array (Algoritma Fisher-Yates)
+             */
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            /**
+             * Memulai Kuis
+             */
+            function startGame() {
+                currentRiddleIndex = 0;
+                shuffledTekaTeki = shuffle([...tekaTekiData]); // Acak urutan teka-teki
+                
+                startScreen.classList.add('hidden');
+                endScreen.classList.add('hidden');
+                gameScreen.classList.remove('hidden');
+                
+                loadRiddle();
+            }
+
+            /**
+             * Memuat Teka-Teki
+             */
+            function loadRiddle() {
+                // Reset state
+                feedbackText.innerText = "";
+                feedbackText.className = "feedback";
+                answerInput.value = "";
+                answerInput.disabled = false;
+                
+                checkBtn.classList.remove('hidden');
+                hintBtn.classList.remove('hidden');
+                nextBtn.classList.add('hidden');
+                
+                // Cek jika teka-teki sudah habis
+                if (currentRiddleIndex >= shuffledTekaTeki.length) {
+                    endGame();
+                    return;
+                }
+                
+                // Muat teka-teki baru
+                const currentRiddle = shuffledTekaTeki[currentRiddleIndex];
+                riddleCounter.innerText = `Teka-Teki ${currentRiddleIndex + 1}`;
+                riddleText.innerText = currentRiddle.question;
+            }
+
+            /**
+             * Memeriksa Jawaban
+             */
+            function checkAnswer() {
+                const currentRiddle = shuffledTekaTeki[currentRiddleIndex];
+                const userAnswer = answerInput.value.trim().toLowerCase();
+                const correctAnswer = currentRiddle.answer.toLowerCase();
+
+                if (userAnswer === "") {
+                    setFeedback("Jangan dikosongin dong!", "wrong");
+                    return;
+                }
+
+                if (userAnswer === correctAnswer) {
+                    setFeedback("Yaa Benar! 🎉 Kamu hebat!", "correct");
+                    answerInput.disabled = true;
+                    checkBtn.classList.add('hidden');
+                    hintBtn.classList.add('hidden');
+                    nextBtn.classList.remove('hidden');
+                } else {
+                    setFeedback("Salah! 😆 Coba lagi, jangan nyerah!", "wrong");
+                }
+            }
+            
+            /**
+             * Menampilkan Petunjuk
+             */
+            function showHint() {
+                const currentRiddle = shuffledTekaTeki[currentRiddleIndex];
+                setFeedback(`Petunjuk: ${currentRiddle.hint}`, "hint");
+            }
+            
+            /**
+             * Pindah ke teka-teki selanjutnya
+             */
+            function nextRiddle() {
+                currentRiddleIndex++;
+                loadRiddle();
+            }
+
+            /**
+             * Mengatur teks umpan balik
+             */
+            function setFeedback(text, type) {
+                feedbackText.innerText = text;
+                feedbackText.className = `feedback ${type}`;
+            }
+            
+            /**
+             * Mengakhiri Kuis
+             */
+            function endGame() {
+                gameScreen.classList.add('hidden');
+                endScreen.classList.remove('hidden');
+            }
+
+            // === 4. Event Listeners ===
+            startBtn.addEventListener('click', startGame);
+            playAgainBtn.addEventListener('click', startGame);
+            checkBtn.addEventListener('click', checkAnswer);
+            hintBtn.addEventListener('click', showHint);
+            nextBtn.addEventListener('click', nextRiddle);
+            
+            // Izinkan menekan "Enter" untuk menjawab
+            answerInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    // Hanya 'Jawab' jika tombol 'Jawab' terlihat
+                    if (!checkBtn.classList.contains('hidden')) {
+                        checkAnswer();
+                    }
+                }
+            });
+
+        });
+    </script>
+
+</body>
+</html>
